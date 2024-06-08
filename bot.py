@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+from aiohttp import web
 import asyncio
 import os
 import sys
@@ -23,9 +22,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 BOT_PREFIX = '-'
-
-# todo claer white space
-
 
 class ValorantBot(commands.Bot):
     debug: bool
@@ -51,10 +47,22 @@ class ValorantBot(commands.Bot):
         await self.tree.sync()
         print(f'\nLogged in as: {self.user}\n\n BOT IS READY !')
         print(f'Version: {self.bot_version}')
-
         # bot presence
         activity_type = discord.ActivityType.listening
         await self.change_presence(activity=discord.Activity(type=activity_type, name='(╯•﹏•╰)'))
+
+    async def start_web_server(self):
+        app = web.Application()
+        app.add_routes([web.get('/', self.handle_request)])
+        
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, 'localhost', 8080)  # Choose your desired port
+        await site.start()
+        print("API server running on http://localhost:8080")
+
+    async def handle_request(self, request):
+        return web.Response(text="Hello from Valorant Bot API!")
 
     async def setup_hook(self) -> None:
         if self.session is None:
@@ -68,17 +76,13 @@ class ValorantBot(commands.Bot):
 
         self.setup_cache()
         await self.load_cogs()
-        # await self.tree.sync()
+        asyncio.create_task(self.start_web_server())  # Start the web server asynchronously
 
     async def load_cogs(self) -> None:
         for ext in initial_extensions:
             try:
                 await self.load_extension(ext)
-            except (
-                ExtensionNotFound,
-                NoEntryPointError,
-                ExtensionFailed,
-            ):
+            except (ExtensionNotFound, NoEntryPointError, ExtensionFailed):
                 print(f'Failed to load extension {ext}.', file=sys.stderr)
                 traceback.print_exc()
 
@@ -99,11 +103,9 @@ class ValorantBot(commands.Bot):
         self.debug = debug
         return await super().start(os.getenv('TOKEN'), reconnect=True)  # type: ignore
 
-
 def run_bot() -> None:
     bot = ValorantBot()
-    asyncio.run(bot.start())
-
+    asyncio.run(bot.start(debug=True))
 
 if __name__ == '__main__':
     run_bot()
