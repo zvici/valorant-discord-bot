@@ -57,9 +57,9 @@ class ValorantBot(commands.Bot):
         
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, 'localhost', 8080)  # Choose your desired port
+        site = web.TCPSite(runner, 'localhost', 80)  # Choose your desired port
         await site.start()
-        print("API server running on http://localhost:8080")
+        print("API server running on http://localhost:80")
 
     async def handle_request(self, request):
         return web.Response(text="Hello from Valorant Bot API!")
